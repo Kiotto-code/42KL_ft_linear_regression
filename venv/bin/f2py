@@ -1,4 +1,4 @@
-#!/home/yichan/projects/42KL-ft_linear_regression/venv/bin/python3
+#!/home/kiotto/42_projects/42KL_ft_linear_regression/venv/bin/python3.13
 # -*- coding: utf-8 -*-
 import re
 import sys
