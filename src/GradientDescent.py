@@ -85,23 +85,22 @@ class LinearRegressModel:
         losses = [] # append the losses to calculate losses overtime
         prev_loss = float('inf')
         for epoch in range(epochs):
+
             # y_pred = self.linear_prediction(w, x, b) # find the y-prediction based on the linear line
             y_pred = w * x + b
             print("y_pred: ", y_pred)
-            # input("continus")
-            # loss = 1/n * np.sum((y_pred  - y) ** 2) # MSE cost function for finding convergence
 
-            # if abs(prev_loss - loss) < 1e-6:
-            #     print(f"Converged at epoch {epoch}\n" +
-            #     f"pred_loss, loss: {prev_loss}, {loss}\n" +
-            #     f"loss_diff: {prev_loss - loss:.20f}"
-            #     )
-            #     break
 
-            # prev_loss = loss
+            loss = 1/n * np.sum((y_pred  - y) ** 2) # MSE cost function for finding convergence
+            if abs(prev_loss - loss) < 1e-6:
+                print(f"Converged at epoch {epoch}\n" +
+                f"pred_loss, loss: {prev_loss}, {loss}\n" +
+                f"loss_diff: {prev_loss - loss:.20f}"
+                )
+                break
+            prev_loss = loss
+            losses.append(loss)
 
-            # print("Erros: ", errors)
-            # input("continue...")
             dw = (1/n) * np.sum((y_pred - y) * x)
             db = (1/n) * np.sum(y_pred - y)
 
@@ -115,17 +114,15 @@ class LinearRegressModel:
             b -= learning_rate * db
 
             # Optionally print the loss every 100 steps
-            if epoch % 100 == 0:
-                loss = (1/n) * np.sum((y_pred - y)**2)
-                print("loss: ", loss)
-                # input("continue")
-                # Check if loss improvement is small
-                if abs(prev_loss - loss) < 1e-6:  # You can tune this threshold
-                    print(f"Converged at epoch {epoch}")
-                    break
-                prev_loss = loss
-                losses.append(loss)
-                print("losses: ", losses)
+            if epoch % 1000 == 0:
+                # loss = (1/n) * np.sum((y_pred - y)**2)
+                # print("loss: ", loss)
+                # if abs(prev_loss - loss) < 1e-6:  # You can tune this threshold
+                #     print(f"Converged at epoch {epoch}")
+                #     break
+                # prev_loss = loss
+                # losses.append(loss)
+                # print("losses: ", losses)
                 # input("continue")
                 print(f"Epoch {epoch}: Loss = {loss:.4f}, w = {w:.4f}, b = {b:.4f}")
 
@@ -133,6 +130,12 @@ class LinearRegressModel:
         draw_plt(losses, "Epoch", "Loss", "Loss Over Time", True)
         print("losses: ", losses)
         print(f"\nFinal model: y = {w:.2f}x + {b:.2f}")
+
+        # Rescale to original units (after training)
+        w_orig = y_std / x_std * w
+        b_orig = y_std * b + y_mean - w_orig * x_mean
+        print(f"Model in original scale: y = {w_orig:.2f}x + {b_orig:.2f}")
+
         # self.DescentedLinear = TrainedModel(x, y, m, c)
         
 
