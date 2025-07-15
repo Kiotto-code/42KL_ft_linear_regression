@@ -5,10 +5,33 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 EPOCH = 1000
-
+DEBUG = False
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(current_dir, "./car_data.csv")
+csv_path = os.path.join(current_dir, "./data.csv")
+
+def plot_loss_and_prediction(x_data, y_actual, y_trained_predicted, losses):
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+    # Plot 1: Loss over epochs
+    axes[0].plot(range(len(losses)), losses, color='green')
+    axes[0].set_title("Loss Over Time")
+    axes[0].set_xlabel("Epoch")
+    axes[0].set_ylabel("Loss")
+    axes[0].grid(True)
+
+    # Plot 2: Price vs Mileage
+    axes[1].scatter(x_data, y_actual, color='blue', label='Actual Data')
+    axes[1].plot(x_data, y_trained_predicted, color='red', label='Prediction Line')
+    axes[1].set_title("Price over Mileage")
+    axes[1].set_xlabel("Mileage")
+    axes[1].set_ylabel("Price")
+    axes[1].grid(True)
+    axes[1].legend()
+
+    plt.tight_layout()
+    plt.show()
+
 
 def draw_plt (plot, x_label, y_label, title, grid = True, x_data = None, y_data = None):
     # plt.scatter(scatters)
@@ -16,12 +39,14 @@ def draw_plt (plot, x_label, y_label, title, grid = True, x_data = None, y_data 
         plt.scatter(x_data, y_data, color='blue', label='Actual Data')
         # plt.plot(plot, color='red', label='Prediction Line')
         plt.plot(x_data, plot, color='red', label='Prediction Line')
-    if plot is not None and title=="Loss Over Time":
-        plt.plot (plot)
+    # if plot is not None and title=="Loss Over Time":
+    #     plt.plot (plot)
     plt.xlabel (x_label)
     plt.ylabel (y_label)
     plt.title (title)
-    plt.grid (True) # This would show gridline at background 
+    plt.grid (True) # This would show gridline at background
+    plt.legend()
+
     plt.show()
 
 # def draw_plt(plot, x_label, y_label, title, grid=True, x_data=None, y_data=None):
@@ -53,14 +78,56 @@ def normalize(arr):
     std = np.std(arr)
     return (arr - mean) / std, mean, std
 
+def ft_debug(msg):
+    if DEBUG:
+        input (msg)
+
+def correlation_analysis(y_trained_prediction, actual_y, y_mean):
+    return np.sum((y_trained_prediction - actual_y)**2) / np.sum((actual_y - y_mean)**2)
+
 class TrainedModel:
 # estimate Price(mileage) = θ0 + (θ1 ∗ mileage) / Linear Regression for prediction
-    def __init__ (self, x, y, m, c):
-        self.x = x # Initial Price of the Model (When the Input var is 0, the y-intercept)
-        self.y = y # The Gradient of SLR (price changes for each unit x)
-        self.m = m
-        self.c = c
-    # def load_model(self):
+    def __init__ (self, x=None, y=None, w_denormal=None, b_denormal=None):
+        self.x_array = x # Initial Price of the Model (When the Input var is 0, the y-intercept)
+        self.y_array = y # The Gradient of SLR (price changes for each unit x)
+        self.weight = w_denormal
+        self.bias = b_denormal
+
+        self.load_model_from_json("TrainedModel.json")
+        # self.save_model_to_json("TrainedModel.json", x, y, w_denormal, b_denormal)
+
+    def load_model_from_json(self, filename):
+        with open(filename, 'r') as f:
+            model = json.load(f)
+
+        # Convert lists back to NumPy arrays
+        self.x_array = np.array(model['x'])
+        self.y_array = np.array(model['y'])
+
+        # Get model parameters
+        self.weight = model['weight']
+        self.bias = model['bias']
+
+        # return x, y, weight, bias
+
+    # def save_model_to_json(self, filename, x, y, w_denormal, b_denormal):
+    #     model = {
+    #         "x": x.tolist(),   # Convert np.ndarray to list
+    #         "y": y.tolist(),
+    #         "weight": float(w_denormal),  # Ensure float, not np.float64
+    #         "bias": float(b_denormal)
+    #     }
+    #     with open(filename, 'w') as f:
+    #         json.dump(model, f, indent=4)
+
+    def LinearPrediction(self):
+        return self.weight * self.x_array + self.bias
+
+    def ModelPredict(self):
+        y_trained_pred = self.LinearPrediction()
+        draw_plt(y_trained_pred, "Epoch", "Price", "Price Over Mileage", True, self.x_array, self.y_array)
+        # draw_plt(self.x_array, self.y_array, y_trained_pred)
+
 
 class LinearRegressModel:
     def __init__(self):
@@ -71,59 +138,66 @@ class LinearRegressModel:
         self._modelData = []
         self.LoadFile()
 
+    def save_model_to_json(self, filename, x, y, w_denormal, b_denormal):
+        model = {
+            "x": x.tolist(),   # Convert np.ndarray to list
+            "y": y.tolist(),
+            "weight": float(w_denormal),  # Ensure float, not np.float64
+            "bias": float(b_denormal)
+        }
+        with open(filename, 'w') as f:
+            json.dump(model, f, indent=4)
+
     def LoadFile(self):
         try:
+                # print(list(model_data))
+            x_vals = []
+            y_vals = []
             with open(csv_path, 'r') as file:
                 model_data = csv.DictReader(file)
-                # print(list(model_data))
                 for r in model_data:
-                    self._modelData.append(r)
-                    self.x.append(float(r['mileage']))  # Mileage is the km traveled by vehicles
-                    self.y.append(float(r['price'])) # Price is the Price of car after traveled Mileage
+                    x_vals.append(float(r['km']))
+                    y_vals.append(float(r['price']))
+            self.x = np.array(x_vals)
+            self.y = np.array(y_vals)
             # print (self._modelData)
             print("LoadtFile x : ", self.x)
             print("LoadFile y : ", self.y)
-            input("Loadfile continue 3")
+            ft_debug("Loadfile continue 3")
             return np.array(self.x), np.array(self.y)
         except Exception as e:
             # An unopenable file
             print(f"Error loading file: {e}")
 
-    @staticmethod
-    def linear_prediction(weight, givenMileage, bias):
-        # This is to predict the Predicted y(Price) and x(Mileage) -> "y=mx+c" -> Program 1
-        y = weight * givenMileage + bias
-        return y
+
 
     # def SLR_calculation(self):
     def GradientDescent(self):
-        x, y = np.array(self.x), np.array(self.y)
-        x, x_mean, x_std = normalize(x)
-        y, y_mean, y_std = normalize(y)
-        print("x", x)
-        print("y", y)
+        x, y = self.x, self.y
+        # x, y = np.array(self.x), np.array(self.y)
         if x is None or y is None:
-            # When given empty sets of data
             print("Training data is Empty!")
             return False
+        normaliezd_x, x_mean, x_std = normalize(x)
+        normaliezd_y, y_mean, y_std = normalize(y)
+        print("x", normaliezd_x)
+        print("y", normaliezd_y)
         w = 0.0
         b = 0.0
 
         learning_rate = 0.01
         epochs = 1000 # This is when algo has complate pass the data set once
-        n = len(x) # This is the number data case for calculate the mean in MSE
+        ft_debug(f"normalized x: {normaliezd_x}")
+        n = len(normaliezd_x) # This is the number data case for calculate the mean in MSE
         print("n: ", n)
-        input("continue")
+        ft_debug("continue")
         losses = [] # append the losses to calculate losses overtime
         prev_loss = float('inf')
         for epoch in range(epochs):
+            y_untrained_pred = w * normaliezd_x + b
+            print("y_untrained_pred: ", y_untrained_pred)
 
-            # y_pred = self.linear_prediction(w, x, b) # find the y-prediction based on the linear line
-            y_pred = w * x + b
-            print("y_pred: ", y_pred)
-
-
-            loss = 1/n * np.sum((y_pred  - y) ** 2) # MSE cost function for finding convergence
+            loss = 1/n * np.sum((y_untrained_pred  - normaliezd_y) ** 2) # MSE cost function for finding convergence
             if abs(prev_loss - loss) < 1e-6:
                 print(f"Converged at epoch {epoch}\n" +
                 f"pred_loss, loss: {prev_loss}, {loss}\n" +
@@ -133,8 +207,8 @@ class LinearRegressModel:
             prev_loss = loss
             losses.append(loss)
 
-            dw = (1/n) * np.sum((y_pred - y) * x)
-            db = (1/n) * np.sum(y_pred - y)
+            dw = (1/n) * np.sum((y_untrained_pred - normaliezd_y) * normaliezd_x)
+            db = (1/n) * np.sum(y_untrained_pred - normaliezd_y)
 
             # check the error gradient magnitude using Eucledian Norm
             grad_magnitude = np.sqrt(dw**2 + db**2)
@@ -147,43 +221,46 @@ class LinearRegressModel:
 
             # Optionally print the loss every 100 steps
             if epoch % 1000 == 0:
-                # loss = (1/n) * np.sum((y_pred - y)**2)
-                # print("loss: ", loss)
-                # if abs(prev_loss - loss) < 1e-6:  # You can tune this threshold
-                #     print(f"Converged at epoch {epoch}")
-                #     break
-                # prev_loss = loss
-                # losses.append(loss)
-                # print("losses: ", losses)
-                # input("continue")
                 print(f"Epoch {epoch}: Loss = {loss:.4f}, w = {w:.4f}, b = {b:.4f}")
-
         
-        draw_plt(losses, "Epoch", "Loss", "Loss Over Time", True)
         print("losses: ", losses)
         print(f"Final model: y = {w:.2f}x + {b:.2f}\n")
 
         # Rescale to original units (after training)
-        w_orig = y_std / x_std * w
-        b_orig = y_std * b + y_mean - w_orig * x_mean
+        w_denormal = y_std / x_std * w
+        b_denormal = y_std * b + y_mean - w_denormal * x_mean
 
-        # Prices = []
-        # fot case in range()
+        # x_array = np.array(self.x)
 
-        x_array = np.array(self.x)
-        y_pred_orig = w_orig * x_array + b_orig
-        draw_plt(y_pred_orig, "Mileage", "Price", "Price over Mileage", True, x_array, self.y) # This would show gridline at background 
-        print("y_array prediction after trained; ", y_pred_orig)
-        input()
-        print("x_array prediction after trained; ", x_array)
-        input()
-        print(f"Model in original scale: y = {w_orig:.2f}x + {b_orig:.2f}")
+        y_trained_pred = w_denormal * self.x + b_denormal
+        plot_loss_and_prediction(self.x, self.y, y_trained_pred, losses)
 
-        # self.DescentedLinear = TrainedModel(x, y, m, c)
-        
+        # print("y_array prediction after trained; ", y_trained_pred)
+        # ft_debug("Continue...")
+        # print("x_array prediction after trained; ", x_array)
+        # ft_debug("Continue...")
+        # print(f"Model in original scale: y = {w_denormal:.2f}x + {b_denormal:.2f}")
+        # print("correlation_analysis: ", correlation_analysis(y_trained_pred, np.array(y), y_mean))
+
+        # self.trained_model = TrainedModel(self.x, self.y, w_denormal, b_denormal)
+        self.save_model_to_json("TrainedModel.json", self.x, self.y, w_denormal, b_denormal)
 
 if __name__ == "__main__":
     model = LinearRegressModel()
     model.GradientDescent()
-    
-    
+
+    PredictionModel = TrainedModel()
+    PredictionModel.ModelPredict()
+
+"""
+# With lists (slower)
+a = [1, 2, 3]
+b = [4, 5, 6]
+c = [x + y for x, y in zip(a, b)]
+
+# With NumPy (faster)
+import numpy as np
+a = np.array([1, 2, 3])
+b = np.array([4, 5, 6])
+c = a + b  # cleaner and faster
+"""

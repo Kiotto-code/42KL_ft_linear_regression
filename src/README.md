@@ -116,5 +116,11 @@ This gives us the **gradient** of the loss with respect to the weight — and te
 
 ---
 
+## Check Correlation of Determination:
+$$
+R2=1−∑(y−yˉ​)2∑(ypred​−y)2​
+$$
+
+---
 
 [Linear Regression with Gradient Descent Derivation](https://medium.com/analytics-vidhya/linear-regression-with-gradient-descent-derivation-c10685ddf0f4)
