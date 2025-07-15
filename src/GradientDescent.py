@@ -4,17 +4,49 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
+EPOCH = 1000
+
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(current_dir, "./car_data.csv")
 
-def draw_plt (plot, x_label, y_label, title, grid = True):
-    plt.plot (plot)
+def draw_plt (plot, x_label, y_label, title, grid = True, x_data = None, y_data = None):
+    # plt.scatter(scatters)
+    if x_data is not None and y_data is not None and plot is not None :
+        plt.scatter(x_data, y_data, color='blue', label='Actual Data')
+        # plt.plot(plot, color='red', label='Prediction Line')
+        plt.plot(x_data, plot, color='red', label='Prediction Line')
+    if plot is not None and title=="Loss Over Time":
+        plt.plot (plot)
     plt.xlabel (x_label)
     plt.ylabel (y_label)
     plt.title (title)
     plt.grid (True) # This would show gridline at background 
     plt.show()
+
+# def draw_plt(plot, x_label, y_label, title, grid=True, x_data=None, y_data=None):
+#     plt.figure()
+    
+#     # Plot scatter if given
+#     if x_data is not None and y_data is not None:
+#         plt.scatter(x_data, y_data, color='blue', label='Actual Data')
+    
+#     # Plot line if x and prediction values are given
+#     if x_data is not None and plot is not None and title != "Loss Over Time":
+#         plt.plot(x_data, plot, color='red', label='Prediction Line')
+
+#     # Plot loss over epochs
+#     if plot is not None and title == "Loss Over Time":
+#         plt.plot(range(len(plot)), plot, color='green', label='Loss')
+
+#     plt.xlabel(x_label)
+#     plt.ylabel(y_label)
+#     plt.title(title)
+#     if grid:
+#         plt.grid(True)
+#     plt.legend()
+#     plt.show()
+
 
 def normalize(arr):
     mean = np.mean(arr)
@@ -129,11 +161,22 @@ class LinearRegressModel:
         
         draw_plt(losses, "Epoch", "Loss", "Loss Over Time", True)
         print("losses: ", losses)
-        print(f"\nFinal model: y = {w:.2f}x + {b:.2f}")
+        print(f"Final model: y = {w:.2f}x + {b:.2f}\n")
 
         # Rescale to original units (after training)
         w_orig = y_std / x_std * w
         b_orig = y_std * b + y_mean - w_orig * x_mean
+
+        # Prices = []
+        # fot case in range()
+
+        x_array = np.array(self.x)
+        y_pred_orig = w_orig * x_array + b_orig
+        draw_plt(y_pred_orig, "Mileage", "Price", "Price over Mileage", True, x_array, self.y) # This would show gridline at background 
+        print("y_array prediction after trained; ", y_pred_orig)
+        input()
+        print("x_array prediction after trained; ", x_array)
+        input()
         print(f"Model in original scale: y = {w_orig:.2f}x + {b_orig:.2f}")
 
         # self.DescentedLinear = TrainedModel(x, y, m, c)
