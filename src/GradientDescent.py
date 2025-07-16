@@ -14,11 +14,12 @@ def plot_loss_and_prediction(x_data, y_actual, y_trained_predicted, losses):
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
     # Plot 1: Loss over epochs
-    axes[0].plot(range(len(losses)), losses, color='green')
-    axes[0].set_title("Loss Over Time")
+    axes[0].plot(range(len(losses)), losses, color='green', label='Loss Line')
+    axes[0].set_title("Loss Over Epoch")
     axes[0].set_xlabel("Epoch")
     axes[0].set_ylabel("Loss")
     axes[0].grid(True)
+    axes[0].legend()
 
     # Plot 2: Price vs Mileage
     axes[1].scatter(x_data, y_actual, color='blue', label='Actual Data')
@@ -31,6 +32,7 @@ def plot_loss_and_prediction(x_data, y_actual, y_trained_predicted, losses):
 
     plt.tight_layout()
     plt.show()
+
 
 
 def draw_plt (plot, x_label, y_label, title, grid = True, x_data = None, y_data = None):
@@ -83,18 +85,25 @@ def ft_debug(msg):
         input (msg)
 
 def correlation_analysis(y_trained_prediction, actual_y, y_mean):
-    return np.sum((y_trained_prediction - actual_y)**2) / np.sum((actual_y - y_mean)**2)
+    return 1 - np.sum((y_trained_prediction - actual_y)**2) / np.sum((actual_y - y_mean)**2)
 
 class TrainedModel:
 # estimate Price(mileage) = θ0 + (θ1 ∗ mileage) / Linear Regression for prediction
     def __init__ (self, x=None, y=None, w_denormal=None, b_denormal=None):
-        self.x_array = x # Initial Price of the Model (When the Input var is 0, the y-intercept)
-        self.y_array = y # The Gradient of SLR (price changes for each unit x)
-        self.weight = w_denormal
-        self.bias = b_denormal
+        if x is None or y is None or w_denormal is None or b_denormal is None:
+            self.load_model_from_json("TrainedModel.json")
+        else:
+            self.x_array = x
+            self.y_array = y
+            self.weight = w_denormal
+            self.bias = b_denormal
 
-        self.load_model_from_json("TrainedModel.json")
-        # self.save_model_to_json("TrainedModel.json", x, y, w_denormal, b_denormal)
+    def MileageCalc (self):
+        mileage = float(input("Enter the mileage (in km): "))
+        print("You entered:", mileage)
+
+        Price = mileage * self.weight + self.bias
+        print(f"Predicted Price: {Price:.2f}")
 
     def load_model_from_json(self, filename):
         with open(filename, 'r') as f:
@@ -224,13 +233,12 @@ class LinearRegressModel:
                 print(f"Epoch {epoch}: Loss = {loss:.4f}, w = {w:.4f}, b = {b:.4f}")
         
         print("losses: ", losses)
-        print(f"Final model: y = {w:.2f}x + {b:.2f}\n")
+        print(f"Final model normaled: y = {w:.2f}x + {b:2f}\n")
 
         # Rescale to original units (after training)
         w_denormal = y_std / x_std * w
         b_denormal = y_std * b + y_mean - w_denormal * x_mean
-
-        # x_array = np.array(self.x)
+        print(f"Final model after denormal: y = {w_denormal:.2f}x + {b_denormal:2f}\n")
 
         y_trained_pred = w_denormal * self.x + b_denormal
         plot_loss_and_prediction(self.x, self.y, y_trained_pred, losses)
@@ -240,17 +248,21 @@ class LinearRegressModel:
         # print("x_array prediction after trained; ", x_array)
         # ft_debug("Continue...")
         # print(f"Model in original scale: y = {w_denormal:.2f}x + {b_denormal:.2f}")
-        # print("correlation_analysis: ", correlation_analysis(y_trained_pred, np.array(y), y_mean))
 
         # self.trained_model = TrainedModel(self.x, self.y, w_denormal, b_denormal)
+        print("correlation_analysis: ", correlation_analysis(y_trained_pred, np.array(y), y_mean))
         self.save_model_to_json("TrainedModel.json", self.x, self.y, w_denormal, b_denormal)
 
 if __name__ == "__main__":
-    model = LinearRegressModel()
-    model.GradientDescent()
+    try:
+        model = LinearRegressModel()
+        model.GradientDescent()
 
-    PredictionModel = TrainedModel()
-    PredictionModel.ModelPredict()
+        PredictionModel = TrainedModel()
+        PredictionModel.ModelPredict()
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
 
 """
 # With lists (slower)
