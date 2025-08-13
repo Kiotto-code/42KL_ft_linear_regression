@@ -10,6 +10,10 @@ DEBUG = False
 current_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(current_dir, "./data.csv")
 
+print("current_dir: ", current_dir)
+print("csv_path: ", csv_path)
+input()
+
 def plot_loss_and_prediction(x_data, y_actual, y_trained_predicted, losses):
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
@@ -30,7 +34,7 @@ def plot_loss_and_prediction(x_data, y_actual, y_trained_predicted, losses):
     axes[1].grid(True)
     axes[1].legend()
 
-    plt.tight_layout()
+    fig.tight_layout() # Adjust layout to prevent overlap
     plt.show()
 
 
@@ -84,7 +88,7 @@ def ft_debug(msg):
     if DEBUG:
         input (msg)
 
-def correlation_analysis(y_trained_prediction, actual_y, y_mean):
+def coef_o_det(y_trained_prediction, actual_y, y_mean):
     return 1 - np.sum((y_trained_prediction - actual_y)**2) / np.sum((actual_y - y_mean)**2)
 
 class TrainedModel:
@@ -92,6 +96,7 @@ class TrainedModel:
     def __init__ (self, x=None, y=None, w_denormal=None, b_denormal=None):
         if x is None or y is None or w_denormal is None or b_denormal is None:
             self.load_model_from_json("TrainedModel.json")
+            # self.load_model_from_json(os.path.join(current_dir, "TrainedModel.json"))
         else:
             self.x_array = x
             self.y_array = y
@@ -250,18 +255,46 @@ class LinearRegressModel:
         # print(f"Model in original scale: y = {w_denormal:.2f}x + {b_denormal:.2f}")
 
         # self.trained_model = TrainedModel(self.x, self.y, w_denormal, b_denormal)
-        print("correlation_analysis: ", correlation_analysis(y_trained_pred, np.array(y), y_mean))
+        print("coef_o_det: ", coef_o_det(y_trained_pred, np.array(y), y_mean))
         self.save_model_to_json("TrainedModel.json", self.x, self.y, w_denormal, b_denormal)
+
+
+def MileagePredict():
+    PredictModel = TrainedModel()
+    PredictModel.MileageCalc()
+
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--predict", action="store_true", help="Run in predict mode")
+args = parser.parse_args()
+
 
 if __name__ == "__main__":
     try:
-        model = LinearRegressModel()
-        model.GradientDescent()
+        if args.predict:
+            print("Running in predict mode...")
+            MileagePredict()
+        else:
+            print("Running in normal mode...")
+            model = LinearRegressModel()
+            model.GradientDescent()
 
-        PredictionModel = TrainedModel()
-        PredictionModel.ModelPredict()
+            PredictionModel = TrainedModel()
+            PredictionModel.ModelPredict()
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
+
+# if __name__ == "__main__":
+#     try:
+#         model = LinearRegressModel()
+#         model.GradientDescent()
+
+#         PredictionModel = TrainedModel()
+#         PredictionModel.ModelPredict()
+#     except Exception as e:
+#         print(f"An unexpected error occurred: {e}")
 
 
 """
